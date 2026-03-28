@@ -34,14 +34,28 @@ function shortDate(dateStr) {
   return d.toLocaleDateString("ja-JP", { month: "numeric", day: "numeric" });
 }
 
-function loadData() {
+async function loadData() {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : {};
-  } catch { return {}; }
+    const res = await fetch('/api/sheets');
+    if (!res.ok) throw new Error('fetch failed');
+    return await res.json();
+  } catch {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch { return {}; }
+  }
 }
-function saveData(data) {
+
+async function saveData(data) {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch {}
+  try {
+    await fetch('/api/sheets', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sessions: data }),
+    });
+  } catch {}
 }
 
 function LineChart({ data, color }) {
@@ -83,7 +97,12 @@ function LineChart({ data, color }) {
 
 export default function App() {
   const [tab, setTab] = useState("record");
-  const [sessions, setSessions] = useState(() => loadData());
+  const [sessions, setSessions] = useState({});
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    loadData().then(d => { setSessions(d); setLoaded(true); });
+  }, []);
   const [pickingExercise, setPickingExercise] = useState(false);
   const [aiText, setAiText] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
