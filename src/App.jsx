@@ -33,11 +33,11 @@ const TODAY = (() => {
 
 function formatDate(dateStr) {
   const d = new Date(dateStr);
-  return d.toLocaleDateString("ja-JP", { month: "long", day: "numeric", weekday: "short" });
+  return d.toLocaleDateString("ja-JP", { year: "numeric", month: "long", day: "numeric", weekday: "short" });
 }
 function shortDate(dateStr) {
   const d = new Date(dateStr);
-  return d.toLocaleDateString("ja-JP", { month: "numeric", day: "numeric" });
+  return d.toLocaleDateString("ja-JP", { year: "numeric", month: "numeric", day: "numeric" });
 }
 
 async function loadData() {
@@ -66,17 +66,18 @@ async function saveData(data) {
 
 
 // ドラムロールピッカー
-function Picker({ values, value, onChange, unit }) {
+function Picker({ values, value, onChange, unit, width }) {
   const ITEM_H = 44;
   const VISIBLE = 5;
   const ref = useRef(null);
   const idx = values.indexOf(value) === -1 ? 0 : values.indexOf(value);
+  const isNumeric = typeof values[0] === "number";
 
   useEffect(() => {
     if (ref.current) {
       ref.current.scrollTop = idx * ITEM_H;
     }
-  }, []);
+  }, [value]);
 
   const handleScroll = () => {
     if (!ref.current) return;
@@ -85,11 +86,11 @@ function Picker({ values, value, onChange, unit }) {
     if (values[clamped] !== value) onChange(values[clamped]);
   };
 
+  const w = width || (isNumeric ? 90 : 160);
+
   return (
-    <div style={{position:'relative',width:90,height:ITEM_H*VISIBLE,overflow:'hidden'}}>
-      {/* 選択中ハイライト */}
+    <div style={{position:'relative',width:w,height:ITEM_H*VISIBLE,overflow:'hidden'}}>
       <div style={{position:'absolute',top:ITEM_H*2,left:0,right:0,height:ITEM_H,background:'rgba(232,76,30,0.08)',borderTop:'2px solid #e84c1e',borderBottom:'2px solid #e84c1e',borderRadius:8,zIndex:1,pointerEvents:'none'}}/>
-      {/* 上下グラデ */}
       <div style={{position:'absolute',top:0,left:0,right:0,height:ITEM_H*2,background:'linear-gradient(to bottom,rgba(255,255,255,1),rgba(255,255,255,0))',zIndex:2,pointerEvents:'none'}}/>
       <div style={{position:'absolute',bottom:0,left:0,right:0,height:ITEM_H*2,background:'linear-gradient(to top,rgba(255,255,255,1),rgba(255,255,255,0))',zIndex:2,pointerEvents:'none'}}/>
       <div
@@ -99,7 +100,7 @@ function Picker({ values, value, onChange, unit }) {
       >
         <div style={{height:ITEM_H*2}}/>
         {values.map(v => (
-          <div key={v} style={{height:ITEM_H,display:'flex',alignItems:'center',justifyContent:'center',scrollSnapAlign:'center',fontFamily:'Bebas Neue,sans-serif',fontSize:28,color: v===value?'#e84c1e':'#aaa',fontWeight:700,transition:'color .15s'}}>
+          <div key={v} style={{height:ITEM_H,display:'flex',alignItems:'center',justifyContent:'center',scrollSnapAlign:'center',fontFamily:isNumeric?'Bebas Neue,sans-serif':'Noto Sans JP,sans-serif',fontSize:isNumeric?28:15,color: v===value?'#e84c1e':'#aaa',fontWeight:700,transition:'color .15s',padding:'0 8px',textAlign:'center',wordBreak:'keep-all',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>
             {v}{unit}
           </div>
         ))}
@@ -169,6 +170,7 @@ export default function App() {
   const [chartMetric, setChartMetric] = useState("volume");
   const [editingDate, setEditingDate] = useState(null);
   const [editSetInputs, setEditSetInputs] = useState({});
+  const [historyMonth, setHistoryMonth] = useState(() => TODAY.slice(0, 7));
   const timerRef = useRef(null);
   const audioCtxRef = useRef(null);
 
@@ -368,7 +370,10 @@ export default function App() {
     URL.revokeObjectURL(url);
   };
 
-  const sortedHistory = Object.values(sessions).sort((a,b) => b.date.localeCompare(a.date));
+  const allMonths = [...new Set(Object.keys(sessions).map(d => d.slice(0,7)))].sort((a,b) => b.localeCompare(a));
+  const sortedHistory = Object.values(sessions)
+    .filter(s => s.date.startsWith(historyMonth))
+    .sort((a,b) => b.date.localeCompare(a.date));
   const usedExercises = todaySession.exercises.map(e => e.name);
   const totalSets = todaySession.exercises.reduce((s, e) => s + e.sets.length, 0);
   const isDone = timerSec !== null && timerSec <= 0;
@@ -455,11 +460,13 @@ export default function App() {
               <div className="csec">
                 <div className="stitle">📈 グラフ</div>
                 <div className="cstitle">種目を選択</div>
-                <div className="exscroll">
-                  {allExerciseNames.map(name=>(
-                    <button key={name} className={`echip ${chartExercise===name?"on":""}`}
-                      onClick={()=>setChartExercise(chartExercise===name?null:name)}>{name}</button>
-                  ))}
+                <div style={{display:'flex',justifyContent:'center',padding:'4px 0 8px'}}>
+                  <Picker
+                    values={allExerciseNames}
+                    value={chartExercise || allExerciseNames[0]}
+                    onChange={v=>setChartExercise(v)}
+                    unit=""
+                  />
                 </div>
                 {chartExercise && (<>
                   <div className="mtog">
@@ -491,11 +498,19 @@ export default function App() {
             )}
             <div className="histhdr">
               <div className="stitle">履歴</div>
-              {sortedHistory.length>0 && (
-                <button className="csvbtn" onClick={exportCSV}>📥 CSV</button>
-              )}
+              <button className="csvbtn" onClick={exportCSV}>📥 CSV</button>
             </div>
-            {sortedHistory.length===0 && <div className="empty">まだ記録がありません<br/>ワークアウトを記録してみよう！</div>}
+            {allMonths.length > 0 && (
+              <div style={{display:'flex',justifyContent:'center',background:'#fff',borderRadius:18,padding:'8px 0',marginBottom:14,boxShadow:'0 2px 8px rgba(0,0,0,.07)'}}>
+                <Picker
+                  values={allMonths}
+                  value={historyMonth}
+                  onChange={v=>setHistoryMonth(v)}
+                  unit=""
+                />
+              </div>
+            )}
+            {sortedHistory.length===0 && <div className="empty">この月の記録はありません</div>}
             {sortedHistory.map(session=>(
               <div className="hcard" key={session.date}>
                 <div className="hhdr">
