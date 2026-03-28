@@ -67,8 +67,8 @@ async function saveData(data) {
 
 // ドラムロールピッカー
 function Picker({ values, value, onChange, unit, width }) {
-  const ITEM_H = 44;
-  const VISIBLE = 5;
+  const ITEM_H = 36;
+  const VISIBLE = 3;
   const ref = useRef(null);
   const idx = values.indexOf(value) === -1 ? 0 : values.indexOf(value);
   const isNumeric = typeof values[0] === "number";
