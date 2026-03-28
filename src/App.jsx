@@ -64,6 +64,54 @@ async function saveData(data) {
   } catch {}
 }
 
+
+// ドラムロールピッカー
+function Picker({ values, value, onChange, unit }) {
+  const ITEM_H = 44;
+  const VISIBLE = 5;
+  const ref = useRef(null);
+  const idx = values.indexOf(value) === -1 ? 0 : values.indexOf(value);
+
+  useEffect(() => {
+    if (ref.current) {
+      ref.current.scrollTop = idx * ITEM_H;
+    }
+  }, []);
+
+  const handleScroll = () => {
+    if (!ref.current) return;
+    const i = Math.round(ref.current.scrollTop / ITEM_H);
+    const clamped = Math.max(0, Math.min(i, values.length - 1));
+    if (values[clamped] !== value) onChange(values[clamped]);
+  };
+
+  return (
+    <div style={{position:'relative',width:90,height:ITEM_H*VISIBLE,overflow:'hidden'}}>
+      {/* 選択中ハイライト */}
+      <div style={{position:'absolute',top:ITEM_H*2,left:0,right:0,height:ITEM_H,background:'rgba(232,76,30,0.08)',borderTop:'2px solid #e84c1e',borderBottom:'2px solid #e84c1e',borderRadius:8,zIndex:1,pointerEvents:'none'}}/>
+      {/* 上下グラデ */}
+      <div style={{position:'absolute',top:0,left:0,right:0,height:ITEM_H*2,background:'linear-gradient(to bottom,rgba(255,255,255,1),rgba(255,255,255,0))',zIndex:2,pointerEvents:'none'}}/>
+      <div style={{position:'absolute',bottom:0,left:0,right:0,height:ITEM_H*2,background:'linear-gradient(to top,rgba(255,255,255,1),rgba(255,255,255,0))',zIndex:2,pointerEvents:'none'}}/>
+      <div
+        ref={ref}
+        onScroll={handleScroll}
+        style={{height:'100%',overflowY:'scroll',scrollSnapType:'y mandatory',WebkitOverflowScrolling:'touch',scrollbarWidth:'none'}}
+      >
+        <div style={{height:ITEM_H*2}}/>
+        {values.map(v => (
+          <div key={v} style={{height:ITEM_H,display:'flex',alignItems:'center',justifyContent:'center',scrollSnapAlign:'center',fontFamily:'Bebas Neue,sans-serif',fontSize:28,color: v===value?'#e84c1e':'#aaa',fontWeight:700,transition:'color .15s'}}>
+            {v}{unit}
+          </div>
+        ))}
+        <div style={{height:ITEM_H*2}}/>
+      </div>
+    </div>
+  );
+}
+
+const WEIGHTS = Array.from({length:150},(_,i)=>i+1);
+const REPS = Array.from({length:20},(_,i)=>i+1);
+
 function LineChart({ data, color }) {
   if (!data || data.length < 2) return (
     <div style={{textAlign:"center",color:"#bbb",padding:"20px 0",fontSize:15,fontWeight:600}}>
@@ -178,8 +226,9 @@ export default function App() {
     updateEditSession({ ...editSession, exercises: editSession.exercises.filter(e => e.id !== exId) });
   const addEditSet = (exId) => {
     const inp = editSetInputs[exId] || {};
-    if (!inp.weight || !inp.reps) return;
-    const newSet = { id: Date.now(), weight: parseFloat(inp.weight), reps: parseInt(inp.reps) };
+    const w = inp.weight || 1;
+    const r = inp.reps || 1;
+    const newSet = { id: Date.now(), weight: w, reps: r };
     const exes = editSession.exercises.map(e => e.id === exId ? { ...e, sets: [...e.sets, newSet] } : e);
     updateEditSession({ ...editSession, exercises: exes });
     setEditSetInputs(prev => ({ ...prev, [exId]: { weight: "", reps: "" } }));
@@ -197,19 +246,59 @@ export default function App() {
   };
 
   const addExercise = (name) => {
-    const ex = { id: Date.now(), name, sets: [] };
+    const exId = Date.now();
+    const ex = { id: exId, name, sets: [] };
     updateSessions({ ...todaySession, exercises: [...todaySession.exercises, ex] });
     setPickingExercise(false);
+    // 過去データからデフォルト値を取得
+    const pastSessions = Object.values(sessions)
+      .filter(s => s.date < TODAY)
+      .sort((a, b) => b.date.localeCompare(a.date));
+    let defWeight = 1, defReps = 1;
+    for (const session of pastSessions) {
+      const pastEx = session.exercises.find(e => e.name === name);
+      if (pastEx && pastEx.sets.length > 0) {
+        const last = pastEx.sets[pastEx.sets.length - 1];
+        defWeight = last.weight; defReps = last.reps;
+        break;
+      }
+    }
+    setSetInputs(prev => ({ ...prev, [exId]: { weight: defWeight, reps: defReps } }));
   };
   const removeExercise = (exId) =>
     updateSessions({ ...todaySession, exercises: todaySession.exercises.filter(e => e.id !== exId) });
+  // 種目のデフォルト重量・回数を取得
+  const getDefaultInput = (exId) => {
+    const ex = todaySession.exercises.find(e => e.id === exId);
+    if (!ex) return { weight: 1, reps: 1 };
+    // 当日に既にセットがある場合は直前のセット
+    if (ex.sets.length > 0) {
+      const last = ex.sets[ex.sets.length - 1];
+      return { weight: last.weight, reps: last.reps };
+    }
+    // 当日初回 → 過去のセッションから同名種目の最後のセットを探す
+    const pastSessions = Object.values(sessions)
+      .filter(s => s.date < TODAY)
+      .sort((a, b) => b.date.localeCompare(a.date));
+    for (const session of pastSessions) {
+      const pastEx = session.exercises.find(e => e.name === ex.name);
+      if (pastEx && pastEx.sets.length > 0) {
+        const last = pastEx.sets[pastEx.sets.length - 1];
+        return { weight: last.weight, reps: last.reps };
+      }
+    }
+    return { weight: 1, reps: 1 };
+  };
+
   const addSet = (exId) => {
     const inp = setInputs[exId] || {};
-    if (!inp.weight || !inp.reps) return;
-    const newSet = { id: Date.now(), weight: parseFloat(inp.weight), reps: parseInt(inp.reps) };
+    const w = inp.weight || 1;
+    const r = inp.reps || 1;
+    const newSet = { id: Date.now(), weight: w, reps: r };
     const exes = todaySession.exercises.map(e => e.id === exId ? { ...e, sets: [...e.sets, newSet] } : e);
     updateSessions({ ...todaySession, exercises: exes });
-    setSetInputs(prev => ({ ...prev, [exId]: { weight: "", reps: "" } }));
+    // 追加後のデフォルトは今追加したセットの値
+    setSetInputs(prev => ({ ...prev, [exId]: { weight: w, reps: r } }));
     startTimer();
   };
   const removeSet = (exId, setId) => {
@@ -344,20 +433,11 @@ export default function App() {
                       ))}
                     </div>
                   )}
-                  <div className="addrow">
-                    <div>
-                      <input className="wi" type="number" placeholder="重量" value={inp.weight}
-                        onChange={e=>setSetInputs(p=>({...p,[ex.id]:{...inp,weight:e.target.value}}))}
-                        onKeyDown={e=>e.key==="Enter"&&addSet(ex.id)}/>
-                      <div className="ilbl">kg</div>
-                    </div>
-                    <div>
-                      <input className="ri" type="number" placeholder="回数" value={inp.reps}
-                        onChange={e=>setSetInputs(p=>({...p,[ex.id]:{...inp,reps:e.target.value}}))}
-                        onKeyDown={e=>e.key==="Enter"&&addSet(ex.id)}/>
-                      <div className="ilbl">rep</div>
-                    </div>
-                    <button className="addbtn" onClick={()=>addSet(ex.id)}>＋</button>
+                  <div className="addrow" style={{justifyContent:'center',gap:0,padding:'8px 12px 12px',background:'#fafafa'}}>
+                    <Picker values={WEIGHTS} value={inp.weight||1} onChange={v=>setSetInputs(p=>({...p,[ex.id]:{...inp,weight:v}}))} unit="kg"/>
+                    <div style={{display:'flex',alignItems:'center',color:'#ddd',fontSize:28,fontFamily:'Bebas Neue,sans-serif',padding:'0 4px'}}>×</div>
+                    <Picker values={REPS} value={inp.reps||1} onChange={v=>setSetInputs(p=>({...p,[ex.id]:{...inp,reps:v}}))} unit="rep"/>
+                    <button className="addbtn" style={{marginLeft:12,flexShrink:0}} onClick={()=>addSet(ex.id)}>＋</button>
                   </div>
                 </div>
               );
@@ -508,20 +588,11 @@ export default function App() {
                           ))}
                         </div>
                       )}
-                      <div className="addrow">
-                        <div>
-                          <input className="wi" type="number" placeholder="重量" value={inp.weight}
-                            onChange={e=>setEditSetInputs(p=>({...p,[ex.id]:{...inp,weight:e.target.value}}))}
-                            onKeyDown={e=>e.key==="Enter"&&addEditSet(ex.id)}/>
-                          <div className="ilbl">kg</div>
-                        </div>
-                        <div>
-                          <input className="ri" type="number" placeholder="回数" value={inp.reps}
-                            onChange={e=>setEditSetInputs(p=>({...p,[ex.id]:{...inp,reps:e.target.value}}))}
-                            onKeyDown={e=>e.key==="Enter"&&addEditSet(ex.id)}/>
-                          <div className="ilbl">rep</div>
-                        </div>
-                        <button className="addbtn" onClick={()=>addEditSet(ex.id)}>＋</button>
+                      <div className="addrow" style={{justifyContent:'center',gap:0,padding:'8px 12px 12px',background:'#fafafa'}}>
+                        <Picker values={WEIGHTS} value={inp.weight||1} onChange={v=>setEditSetInputs(p=>({...p,[ex.id]:{...inp,weight:v}}))} unit="kg"/>
+                        <div style={{display:'flex',alignItems:'center',color:'#ddd',fontSize:28,fontFamily:'Bebas Neue,sans-serif',padding:'0 4px'}}>×</div>
+                        <Picker values={REPS} value={inp.reps||1} onChange={v=>setEditSetInputs(p=>({...p,[ex.id]:{...inp,reps:v}}))} unit="rep"/>
+                        <button className="addbtn" style={{marginLeft:12,flexShrink:0}} onClick={()=>addEditSet(ex.id)}>＋</button>
                       </div>
                     </div>
                   );
