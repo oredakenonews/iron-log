@@ -65,54 +65,6 @@ async function saveData(data) {
 }
 
 
-// ドラムロールピッカー
-function Picker({ values, value, onChange, unit, width }) {
-  const ITEM_H = 36;
-  const VISIBLE = 3;
-  const ref = useRef(null);
-  const idx = values.indexOf(value) === -1 ? 0 : values.indexOf(value);
-  const isNumeric = typeof values[0] === "number";
-
-  useEffect(() => {
-    if (ref.current) {
-      ref.current.scrollTop = idx * ITEM_H;
-    }
-  }, [value]);
-
-  const handleScroll = () => {
-    if (!ref.current) return;
-    const i = Math.round(ref.current.scrollTop / ITEM_H);
-    const clamped = Math.max(0, Math.min(i, values.length - 1));
-    if (values[clamped] !== value) onChange(values[clamped]);
-  };
-
-  const w = width || (isNumeric ? 90 : 160);
-
-  return (
-    <div style={{position:'relative',width:w,height:ITEM_H*VISIBLE,overflow:'hidden'}}>
-      <div style={{position:'absolute',top:ITEM_H*2,left:0,right:0,height:ITEM_H,background:'rgba(232,76,30,0.08)',borderTop:'2px solid #e84c1e',borderBottom:'2px solid #e84c1e',borderRadius:8,zIndex:1,pointerEvents:'none'}}/>
-      <div style={{position:'absolute',top:0,left:0,right:0,height:ITEM_H*2,background:'linear-gradient(to bottom,rgba(255,255,255,1),rgba(255,255,255,0))',zIndex:2,pointerEvents:'none'}}/>
-      <div style={{position:'absolute',bottom:0,left:0,right:0,height:ITEM_H*2,background:'linear-gradient(to top,rgba(255,255,255,1),rgba(255,255,255,0))',zIndex:2,pointerEvents:'none'}}/>
-      <div
-        ref={ref}
-        onScroll={handleScroll}
-        style={{height:'100%',overflowY:'scroll',scrollSnapType:'y mandatory',WebkitOverflowScrolling:'touch',scrollbarWidth:'none'}}
-      >
-        <div style={{height:ITEM_H*2}}/>
-        {values.map(v => (
-          <div key={v} style={{height:ITEM_H,display:'flex',alignItems:'center',justifyContent:'center',scrollSnapAlign:'center',fontFamily:isNumeric?'Bebas Neue,sans-serif':'Noto Sans JP,sans-serif',fontSize:isNumeric?28:15,color: v===value?'#e84c1e':'#aaa',fontWeight:700,transition:'color .15s',padding:'0 8px',textAlign:'center',wordBreak:'keep-all',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>
-            {v}{unit}
-          </div>
-        ))}
-        <div style={{height:ITEM_H*2}}/>
-      </div>
-    </div>
-  );
-}
-
-const WEIGHTS = Array.from({length:150},(_,i)=>i+1);
-const REPS = Array.from({length:20},(_,i)=>i+1);
-
 function LineChart({ data, color }) {
   if (!data || data.length < 2) return (
     <div style={{textAlign:"center",color:"#bbb",padding:"20px 0",fontSize:15,fontWeight:600}}>
@@ -384,7 +336,7 @@ export default function App() {
 
   return (
     <>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Noto+Sans+JP:wght@400;600;800&display=swap'); *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;} body{background:#f2f2f7;color-scheme:light;} .app{min-height:100vh;background:#f2f2f7;color:#111;font-family:'Noto Sans JP',sans-serif;max-width:430px;margin:0 auto;} .header{padding:22px 20px 0;display:flex;align-items:center;justify-content:space-between;} .logo{font-family:'Bebas Neue',sans-serif;font-size:38px;letter-spacing:3px;background:linear-gradient(135deg,#e84c1e,#e8003d);-webkit-background-clip:text;-webkit-text-fill-color:transparent;} .saved{font-size:16px;color:#16a34a;font-weight:800;opacity:0;transition:opacity 0.3s;} .saved.on{opacity:1;} .tabs{display:flex;margin:14px 16px 0;gap:4px;background:#ddd;padding:5px;border-radius:16px;} .tb{flex:1;padding:13px 0;border:none;border-radius:12px;background:transparent;color:#666;font-size:15px;font-family:'Noto Sans JP',sans-serif;cursor:pointer;font-weight:700;} .tb.on{background:linear-gradient(135deg,#e84c1e,#e8003d);color:#fff;box-shadow:0 2px 10px rgba(232,76,30,.35);} .content{padding:16px 16px 130px;} .dh{font-size:17px;color:#666;margin-bottom:14px;font-weight:700;} .vbar{display:flex;justify-content:space-between;align-items:center;background:#fff;border-radius:18px;padding:16px 20px;margin-bottom:14px;box-shadow:0 2px 8px rgba(0,0,0,.08);} .vlbl{font-size:14px;color:#999;margin-bottom:2px;font-weight:700;} .vsets{font-size:16px;color:#555;font-weight:700;} .vval{font-family:'Bebas Neue',sans-serif;font-size:38px;color:#111;} .excard{background:#fff;border-radius:20px;margin-bottom:16px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.09);animation:si .2s ease;} @keyframes si{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}} .exhdr{display:flex;align-items:center;justify-content:space-between;padding:16px 16px 12px;} .exname{font-weight:800;font-size:20px;color:#111;} .exmeta{font-size:14px;color:#999;margin-top:3px;font-weight:600;} .exdel{background:none;border:none;color:#ccc;cursor:pointer;font-size:22px;padding:6px;} .stbl{padding:0 16px;} .srow{display:flex;align-items:center;gap:8px;padding:12px 0;border-top:2px solid #f5f5f5;} .snum{font-family:'Bebas Neue',sans-serif;font-size:16px;color:#ccc;width:30px;flex-shrink:0;} .swt{font-family:'Bebas Neue',sans-serif;font-size:34px;color:#e84c1e;line-height:1;} .su{font-size:15px;color:#aaa;font-weight:700;} .sx{font-size:18px;color:#ddd;margin:0 4px;} .srep{font-family:'Bebas Neue',sans-serif;font-size:34px;color:#111;line-height:1;} .svol{font-size:13px;color:#ccc;margin-left:auto;font-weight:700;} .sdel{background:none;border:none;color:#ddd;cursor:pointer;font-size:18px;padding:4px 6px;} .addrow{display:flex;align-items:center;gap:8px;padding:12px 16px 14px;border-top:2px solid #f5f5f5;background:#fafafa;} input{background:#fff;border:2.5px solid #e5e5e5;border-radius:12px;color:#111;font-family:'Noto Sans JP',sans-serif;font-size:22px;font-weight:800;padding:11px 8px;outline:none;text-align:center;transition:border-color .2s;} input:focus{border-color:#e84c1e;} .wi{width:84px;} .ri{width:72px;} .ilbl{font-size:14px;color:#bbb;text-align:center;margin-top:4px;font-weight:700;} .addbtn{background:linear-gradient(135deg,#e84c1e,#e8003d);border:none;border-radius:12px;color:#fff;font-size:28px;width:52px;height:52px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 2px 10px rgba(232,76,30,.35);transition:transform .1s;} .addbtn:active{transform:scale(.9);} .addex{width:100%;padding:20px;background:#fff;border:2.5px dashed #ddd;border-radius:18px;color:#bbb;font-family:'Noto Sans JP',sans-serif;font-size:18px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:0 1px 4px rgba(0,0,0,.05);} .addex:active{border-color:#e84c1e;color:#e84c1e;} .pov{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;display:flex;align-items:flex-end;} .psh{background:#fff;border-radius:26px 26px 0 0;width:100%;max-height:72vh;overflow-y:auto;padding:20px 0 54px;animation:su .25s ease;} @keyframes su{from{transform:translateY(100%)}to{transform:translateY(0)}} .ptitle{font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:2px;color:#e84c1e;padding:0 20px 16px;border-bottom:2px solid #f5f5f5;} .pitem{padding:20px;font-size:19px;font-weight:700;cursor:pointer;border-bottom:1.5px solid #f8f8f8;display:flex;justify-content:space-between;align-items:center;color:#111;} .pitem:active{background:#fff5f0;} .pitem.used{color:#ddd;pointer-events:none;} .stitle{font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:2px;color:#e84c1e;margin-bottom:14px;} .csec{background:#fff;border-radius:20px;padding:18px;margin-bottom:16px;box-shadow:0 2px 10px rgba(0,0,0,.08);} .cstitle{font-size:15px;color:#999;margin-bottom:12px;font-weight:700;} .exscroll{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none;} .exscroll::-webkit-scrollbar{display:none;} .echip{flex-shrink:0;padding:10px 18px;border-radius:50px;border:2.5px solid #e5e5e5;background:transparent;color:#888;font-size:15px;font-family:'Noto Sans JP',sans-serif;cursor:pointer;white-space:nowrap;font-weight:700;} .echip.on{border-color:#e84c1e;color:#e84c1e;background:#fff5f0;} .mtog{display:flex;gap:8px;margin:14px 0 16px;} .mbtn{flex:1;padding:13px 0;border-radius:12px;border:2.5px solid #e5e5e5;background:transparent;color:#888;font-size:16px;font-family:'Noto Sans JP',sans-serif;cursor:pointer;font-weight:800;} .mbtn.on{border-color:#e84c1e;color:#e84c1e;background:#fff5f0;} .cstats{display:flex;gap:10px;margin-top:14px;} .sbox{flex:1;background:#f8f8f8;border-radius:14px;padding:14px 12px;} .slbl{font-size:14px;color:#aaa;margin-bottom:4px;font-weight:700;} .sval{font-family:'Bebas Neue',sans-serif;font-size:30px;color:#e84c1e;line-height:1;} .sunt{font-size:13px;color:#bbb;font-weight:700;} .hcard{background:#fff;border-radius:20px;padding:18px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,.07);} .hhdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;} .hdate{font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:1px;color:#111;} .hvol{font-size:15px;color:#aaa;font-weight:700;} .hex{margin-bottom:10px;} .hexname{font-size:16px;color:#e84c1e;font-weight:800;margin-bottom:6px;} .hsets{display:flex;gap:6px;flex-wrap:wrap;} .hchip{background:#f5f5f5;border-radius:10px;padding:7px 13px;} .hl{font-size:13px;color:#bbb;font-weight:700;} .hn{font-family:'Bebas Neue',sans-serif;font-size:22px;color:#111;} .aicard{background:#fff;border-radius:18px;padding:18px;margin-bottom:16px;font-size:17px;color:#777;line-height:1.85;font-weight:600;box-shadow:0 2px 8px rgba(0,0,0,.07);} .aibtn{width:100%;padding:18px;background:#fff;border:3px solid #e84c1e;border-radius:18px;color:#e84c1e;font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:2px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:0 2px 8px rgba(0,0,0,.07);} .aibub{margin-top:16px;background:#fff;border:2.5px solid #ede8ff;border-radius:18px;padding:20px;font-size:17px;line-height:1.95;color:#333;font-weight:600;box-shadow:0 2px 8px rgba(0,0,0,.07);} .ailbl{font-size:14px;color:#7c3aed;letter-spacing:2px;margin-bottom:10px;display:flex;align-items:center;gap:6px;font-weight:800;} .pulse{width:8px;height:8px;background:#7c3aed;border-radius:50%;animation:p 1.2s infinite;} @keyframes p{0%,100%{opacity:1}50%{opacity:.3}} .dots span{display:inline-block;width:7px;height:7px;background:#e84c1e;border-radius:50%;animation:b .8s infinite;margin:0 2px;} .dots span:nth-child(2){animation-delay:.15s}.dots span:nth-child(3){animation-delay:.3s} @keyframes b{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}} .empty{text-align:center;color:#ccc;padding:50px 0;font-size:17px;line-height:2.4;font-weight:700;} .tov{position:fixed;inset:0;background:rgba(255,255,255,.97);z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;} .tov.done{background:rgba(240,255,245,.98);} .ttitle{font-size:18px;color:#aaa;letter-spacing:3px;font-weight:800;} .tsvg{position:relative;} .tsvg svg{transform:rotate(-90deg);} .tsvg .rt{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;} .ttime{font-family:'Bebas Neue',sans-serif;font-size:80px;line-height:1;color:#111;letter-spacing:4px;} .tdone{font-family:'Bebas Neue',sans-serif;font-size:44px;color:#16a34a;letter-spacing:6px;animation:pop .4s ease;} @keyframes pop{from{transform:scale(.7);opacity:0}to{transform:scale(1);opacity:1}} .thint{font-size:16px;color:#bbb;font-weight:700;} .tclosebtn{padding:18px 52px;background:#f5f5f5;border:2.5px solid #e0e0e0;border-radius:50px;color:#666;font-family:'Noto Sans JP',sans-serif;font-size:18px;font-weight:800;cursor:pointer;} .tmini{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;background:#fff;border-top:3px solid #e84c1e;padding:16px 20px 36px;display:flex;align-items:center;justify-content:space-between;z-index:50;cursor:pointer;box-shadow:0 -4px 16px rgba(0,0,0,.1);} .tml{display:flex;align-items:center;gap:12px;} .tmlbl{font-size:15px;color:#aaa;font-weight:700;} .tmtime{font-family:'Bebas Neue',sans-serif;font-size:40px;color:#e84c1e;line-height:1;} .tmstop{background:none;border:2.5px solid #e0e0e0;border-radius:10px;color:#888;font-size:16px;font-weight:800;padding:10px 18px;cursor:pointer;font-family:'Noto Sans JP',sans-serif;} .tsbar{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;background:#fff;border-top:2px solid #eee;padding:14px 20px 36px;display:flex;align-items:center;justify-content:space-between;z-index:50;box-shadow:0 -2px 10px rgba(0,0,0,.06);} .tslbl{font-size:16px;color:#bbb;font-weight:700;} .tsbtn{display:flex;align-items:center;gap:8px;background:none;border:2.5px solid #e0e0e0;border-radius:14px;color:#888;font-size:17px;font-weight:800;padding:12px 22px;cursor:pointer;font-family:'Noto Sans JP',sans-serif;} .csvbtn{display:flex;align-items:center;gap:8px;background:none;border:2.5px solid #e0e0e0;border-radius:14px;color:#888;font-size:16px;font-weight:800;padding:12px 20px;cursor:pointer;font-family:'Noto Sans JP',sans-serif;white-space:nowrap;} .csvbtn:active{border-color:#e84c1e;color:#e84c1e;} .histhdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;} .histhdr .stitle{margin-bottom:0;}`}</style>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Noto+Sans+JP:wght@400;600;800&display=swap'); *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;} body{background:#f2f2f7;color-scheme:light;} .app{min-height:100vh;background:#f2f2f7;color:#111;font-family:'Noto Sans JP',sans-serif;max-width:430px;margin:0 auto;} .header{padding:22px 20px 0;display:flex;align-items:center;justify-content:space-between;} .logo{font-family:'Bebas Neue',sans-serif;font-size:38px;letter-spacing:3px;background:linear-gradient(135deg,#e84c1e,#e8003d);-webkit-background-clip:text;-webkit-text-fill-color:transparent;} .saved{font-size:16px;color:#16a34a;font-weight:800;opacity:0;transition:opacity 0.3s;} .saved.on{opacity:1;} .tabs{display:flex;margin:14px 16px 0;gap:4px;background:#ddd;padding:5px;border-radius:16px;} .tb{flex:1;padding:13px 0;border:none;border-radius:12px;background:transparent;color:#666;font-size:15px;font-family:'Noto Sans JP',sans-serif;cursor:pointer;font-weight:700;} .tb.on{background:linear-gradient(135deg,#e84c1e,#e8003d);color:#fff;box-shadow:0 2px 10px rgba(232,76,30,.35);} .content{padding:16px 16px 130px;} .dh{font-size:17px;color:#666;margin-bottom:14px;font-weight:700;} .vbar{display:flex;justify-content:space-between;align-items:center;background:#fff;border-radius:18px;padding:16px 20px;margin-bottom:14px;box-shadow:0 2px 8px rgba(0,0,0,.08);} .vlbl{font-size:14px;color:#999;margin-bottom:2px;font-weight:700;} .vsets{font-size:16px;color:#555;font-weight:700;} .vval{font-family:'Bebas Neue',sans-serif;font-size:38px;color:#111;} .excard{background:#fff;border-radius:20px;margin-bottom:16px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.09);animation:si .2s ease;} @keyframes si{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}} .exhdr{display:flex;align-items:center;justify-content:space-between;padding:16px 16px 12px;} .exname{font-weight:800;font-size:20px;color:#111;} .exmeta{font-size:14px;color:#999;margin-top:3px;font-weight:600;} .exdel{background:none;border:none;color:#ccc;cursor:pointer;font-size:22px;padding:6px;} .stbl{padding:0 16px;} .srow{display:flex;align-items:center;gap:8px;padding:12px 0;border-top:2px solid #f5f5f5;} .snum{font-family:'Bebas Neue',sans-serif;font-size:16px;color:#ccc;width:30px;flex-shrink:0;} .swt{font-family:'Bebas Neue',sans-serif;font-size:34px;color:#e84c1e;line-height:1;} .su{font-size:15px;color:#aaa;font-weight:700;} .sx{font-size:18px;color:#ddd;margin:0 4px;} .srep{font-family:'Bebas Neue',sans-serif;font-size:34px;color:#111;line-height:1;} .svol{font-size:13px;color:#ccc;margin-left:auto;font-weight:700;} .sdel{background:none;border:none;color:#ddd;cursor:pointer;font-size:18px;padding:4px 6px;} .addrow{display:flex;align-items:center;gap:8px;padding:12px 16px 14px;border-top:2px solid #f5f5f5;background:#fafafa;} input{background:#fff;border:2.5px solid #e5e5e5;border-radius:12px;color:#111;font-family:'Noto Sans JP',sans-serif;font-size:22px;font-weight:800;padding:11px 8px;outline:none;text-align:center;transition:border-color .2s;} input:focus{border-color:#e84c1e;} .wi{width:84px;} .ri{width:72px;} .ilbl{font-size:14px;color:#bbb;text-align:center;margin-top:4px;font-weight:700;} .addbtn{background:linear-gradient(135deg,#e84c1e,#e8003d);border:none;border-radius:12px;color:#fff;font-size:28px;width:52px;height:52px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 2px 10px rgba(232,76,30,.35);transition:transform .1s;} .addbtn:active{transform:scale(.9);} .addex{width:100%;padding:20px;background:#fff;border:2.5px dashed #ddd;border-radius:18px;color:#bbb;font-family:'Noto Sans JP',sans-serif;font-size:18px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:0 1px 4px rgba(0,0,0,.05);} .addex:active{border-color:#e84c1e;color:#e84c1e;} .pov{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;display:flex;align-items:flex-end;} .psh{background:#fff;border-radius:26px 26px 0 0;width:100%;max-height:72vh;overflow-y:auto;padding:20px 0 54px;animation:su .25s ease;} @keyframes su{from{transform:translateY(100%)}to{transform:translateY(0)}} .ptitle{font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:2px;color:#e84c1e;padding:0 20px 16px;border-bottom:2px solid #f5f5f5;} .pitem{padding:20px;font-size:19px;font-weight:700;cursor:pointer;border-bottom:1.5px solid #f8f8f8;display:flex;justify-content:space-between;align-items:center;color:#111;} .pitem:active{background:#fff5f0;} .pitem.used{color:#ddd;pointer-events:none;} .stitle{font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:2px;color:#e84c1e;margin-bottom:14px;} .csec{background:#fff;border-radius:20px;padding:18px;margin-bottom:16px;box-shadow:0 2px 10px rgba(0,0,0,.08);} .cstitle{font-size:15px;color:#999;margin-bottom:12px;font-weight:700;} .exscroll{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none;} .exscroll::-webkit-scrollbar{display:none;} .echip{flex-shrink:0;padding:10px 18px;border-radius:50px;border:2.5px solid #e5e5e5;background:transparent;color:#888;font-size:15px;font-family:'Noto Sans JP',sans-serif;cursor:pointer;white-space:nowrap;font-weight:700;} .echip.on{border-color:#e84c1e;color:#e84c1e;background:#fff5f0;} .mtog{display:flex;gap:8px;margin:14px 0 16px;} .mbtn{flex:1;padding:13px 0;border-radius:12px;border:2.5px solid #e5e5e5;background:transparent;color:#888;font-size:16px;font-family:'Noto Sans JP',sans-serif;cursor:pointer;font-weight:800;} .mbtn.on{border-color:#e84c1e;color:#e84c1e;background:#fff5f0;} .cstats{display:flex;gap:10px;margin-top:14px;} .sbox{flex:1;background:#f8f8f8;border-radius:14px;padding:14px 12px;} .slbl{font-size:14px;color:#aaa;margin-bottom:4px;font-weight:700;} .sval{font-family:'Bebas Neue',sans-serif;font-size:30px;color:#e84c1e;line-height:1;} .sunt{font-size:13px;color:#bbb;font-weight:700;} .hcard{background:#fff;border-radius:20px;padding:18px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,.07);} .hhdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;} .hdate{font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:1px;color:#111;} .hvol{font-size:15px;color:#aaa;font-weight:700;} .hex{margin-bottom:10px;} .hexname{font-size:16px;color:#e84c1e;font-weight:800;margin-bottom:6px;} .hsets{display:flex;gap:6px;flex-wrap:wrap;} .hchip{background:#f5f5f5;border-radius:10px;padding:7px 13px;} .hl{font-size:13px;color:#bbb;font-weight:700;} .hn{font-family:'Bebas Neue',sans-serif;font-size:22px;color:#111;} .aicard{background:#fff;border-radius:18px;padding:18px;margin-bottom:16px;font-size:17px;color:#777;line-height:1.85;font-weight:600;box-shadow:0 2px 8px rgba(0,0,0,.07);} .aibtn{width:100%;padding:18px;background:#fff;border:3px solid #e84c1e;border-radius:18px;color:#e84c1e;font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:2px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:0 2px 8px rgba(0,0,0,.07);} .aibub{margin-top:16px;background:#fff;border:2.5px solid #ede8ff;border-radius:18px;padding:20px;font-size:17px;line-height:1.95;color:#333;font-weight:600;box-shadow:0 2px 8px rgba(0,0,0,.07);} .ailbl{font-size:14px;color:#7c3aed;letter-spacing:2px;margin-bottom:10px;display:flex;align-items:center;gap:6px;font-weight:800;} .pulse{width:8px;height:8px;background:#7c3aed;border-radius:50%;animation:p 1.2s infinite;} @keyframes p{0%,100%{opacity:1}50%{opacity:.3}} .dots span{display:inline-block;width:7px;height:7px;background:#e84c1e;border-radius:50%;animation:b .8s infinite;margin:0 2px;} .dots span:nth-child(2){animation-delay:.15s}.dots span:nth-child(3){animation-delay:.3s} @keyframes b{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}} .empty{text-align:center;color:#ccc;padding:50px 0;font-size:17px;line-height:2.4;font-weight:700;} .tov{position:fixed;inset:0;background:rgba(255,255,255,.97);z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;} .tov.done{background:rgba(240,255,245,.98);} .ttitle{font-size:18px;color:#aaa;letter-spacing:3px;font-weight:800;} .tsvg{position:relative;} .tsvg svg{transform:rotate(-90deg);} .tsvg .rt{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;} .ttime{font-family:'Bebas Neue',sans-serif;font-size:80px;line-height:1;color:#111;letter-spacing:4px;} .tdone{font-family:'Bebas Neue',sans-serif;font-size:44px;color:#16a34a;letter-spacing:6px;animation:pop .4s ease;} @keyframes pop{from{transform:scale(.7);opacity:0}to{transform:scale(1);opacity:1}} .thint{font-size:16px;color:#bbb;font-weight:700;} .tclosebtn{padding:18px 52px;background:#f5f5f5;border:2.5px solid #e0e0e0;border-radius:50px;color:#666;font-family:'Noto Sans JP',sans-serif;font-size:18px;font-weight:800;cursor:pointer;} .tmini{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;background:#fff;border-top:3px solid #e84c1e;padding:16px 20px 36px;display:flex;align-items:center;justify-content:space-between;z-index:50;cursor:pointer;box-shadow:0 -4px 16px rgba(0,0,0,.1);} .tml{display:flex;align-items:center;gap:12px;} .tmlbl{font-size:15px;color:#aaa;font-weight:700;} .tmtime{font-family:'Bebas Neue',sans-serif;font-size:40px;color:#e84c1e;line-height:1;} .tmstop{background:none;border:2.5px solid #e0e0e0;border-radius:10px;color:#888;font-size:16px;font-weight:800;padding:10px 18px;cursor:pointer;font-family:'Noto Sans JP',sans-serif;} .tsbar{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;background:#fff;border-top:2px solid #eee;padding:14px 20px 36px;display:flex;align-items:center;justify-content:space-between;z-index:50;box-shadow:0 -2px 10px rgba(0,0,0,.06);} .tslbl{font-size:16px;color:#bbb;font-weight:700;} .tsbtn{display:flex;align-items:center;gap:8px;background:none;border:2.5px solid #e0e0e0;border-radius:14px;color:#888;font-size:17px;font-weight:800;padding:12px 22px;cursor:pointer;font-family:'Noto Sans JP',sans-serif;} .nsel{appearance:none;-webkit-appearance:none;background:#f5f5f5;border:2.5px solid #e5e5e5;border-radius:12px;font-family:'Bebas Neue',sans-serif;font-size:28px;color:#e84c1e;font-weight:700;text-align:center;padding:10px 8px;width:86px;cursor:pointer;outline:none;} .nsel:focus{border-color:#e84c1e;} .csvbtn{display:flex;align-items:center;gap:8px;background:none;border:2.5px solid #e0e0e0;border-radius:14px;color:#888;font-size:16px;font-weight:800;padding:12px 20px;cursor:pointer;font-family:'Noto Sans JP',sans-serif;white-space:nowrap;} .csvbtn:active{border-color:#e84c1e;color:#e84c1e;} .histhdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;} .histhdr .stitle{margin-bottom:0;}`}</style>
       <div className="app">
         <div className="header">
           <div className="logo">IRON LOG</div>
@@ -438,11 +390,21 @@ export default function App() {
                       ))}
                     </div>
                   )}
-                  <div className="addrow" style={{justifyContent:'center',gap:0,padding:'8px 12px 12px',background:'#fafafa'}}>
-                    <Picker values={WEIGHTS} value={inp.weight||1} onChange={v=>setSetInputs(p=>({...p,[ex.id]:{...inp,weight:v}}))} unit="kg"/>
-                    <div style={{display:'flex',alignItems:'center',color:'#ddd',fontSize:28,fontFamily:'Bebas Neue,sans-serif',padding:'0 4px'}}>×</div>
-                    <Picker values={REPS} value={inp.reps||1} onChange={v=>setSetInputs(p=>({...p,[ex.id]:{...inp,reps:v}}))} unit="rep"/>
-                    <button className="addbtn" style={{marginLeft:12,flexShrink:0}} onClick={()=>addSet(ex.id)}>＋</button>
+                  <div className="addrow" style={{justifyContent:'center',gap:8,padding:'12px 16px',background:'#fafafa'}}>
+                    <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:4}}>
+                      <select className="nsel" value={inp.weight||1} onChange={e=>setSetInputs(p=>({...p,[ex.id]:{...inp,weight:Number(e.target.value)}}))}>
+                        {Array.from({length:150},(_,i)=>i+1).map(w=><option key={w} value={w}>{w}</option>)}
+                      </select>
+                      <span className="ilbl">kg</span>
+                    </div>
+                    <div style={{display:'flex',alignItems:'center',color:'#ddd',fontSize:28,fontFamily:"'Bebas Neue',sans-serif",paddingBottom:18}}>×</div>
+                    <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:4}}>
+                      <select className="nsel" value={inp.reps||1} onChange={e=>setSetInputs(p=>({...p,[ex.id]:{...inp,reps:Number(e.target.value)}}))}>
+                        {Array.from({length:20},(_,i)=>i+1).map(r=><option key={r} value={r}>{r}</option>)}
+                      </select>
+                      <span className="ilbl">rep</span>
+                    </div>
+                    <button className="addbtn" style={{marginBottom:18,flexShrink:0}} onClick={()=>addSet(ex.id)}>＋</button>
                   </div>
                 </div>
               );
@@ -460,14 +422,13 @@ export default function App() {
               <div className="csec">
                 <div className="stitle">📈 グラフ</div>
                 <div className="cstitle">種目を選択</div>
-                <div style={{display:'flex',justifyContent:'center',padding:'4px 0 8px'}}>
-                  <Picker
-                    values={allExerciseNames}
-                    value={chartExercise || allExerciseNames[0]}
-                    onChange={v=>setChartExercise(v)}
-                    unit=""
-                  />
-                </div>
+                <select
+                  value={chartExercise || allExerciseNames[0]}
+                  onChange={e=>setChartExercise(e.target.value)}
+                  style={{width:'100%',padding:'12px 16px',borderRadius:12,border:'2.5px solid #e5e5e5',fontSize:16,fontWeight:700,fontFamily:"'Noto Sans JP',sans-serif",color:'#e84c1e',background:'#f5f5f5',outline:'none',marginBottom:4,appearance:'none',WebkitAppearance:'none',textAlign:'center'}}
+                >
+                  {allExerciseNames.map(n=><option key={n} value={n}>{n}</option>)}
+                </select>
                 {chartExercise && (<>
                   <div className="mtog">
                     <button className={`mbtn ${chartMetric==="volume"?"on":""}`} onClick={()=>setChartMetric("volume")}>総ボリューム</button>
@@ -501,13 +462,14 @@ export default function App() {
               <button className="csvbtn" onClick={exportCSV}>📥 CSV</button>
             </div>
             {allMonths.length > 0 && (
-              <div style={{display:'flex',justifyContent:'center',background:'#fff',borderRadius:18,padding:'8px 0',marginBottom:14,boxShadow:'0 2px 8px rgba(0,0,0,.07)'}}>
-                <Picker
-                  values={allMonths}
+              <div style={{background:'#fff',borderRadius:18,padding:'12px 16px',marginBottom:14,boxShadow:'0 2px 8px rgba(0,0,0,.07)'}}>
+                <select
                   value={historyMonth}
-                  onChange={v=>setHistoryMonth(v)}
-                  unit=""
-                />
+                  onChange={e=>setHistoryMonth(e.target.value)}
+                  style={{width:'100%',padding:'10px 16px',borderRadius:12,border:'2.5px solid #e5e5e5',fontSize:16,fontWeight:700,fontFamily:"'Noto Sans JP',sans-serif",color:'#e84c1e',background:'#f5f5f5',outline:'none',appearance:'none',WebkitAppearance:'none',textAlign:'center'}}
+                >
+                  {allMonths.map(m=><option key={m} value={m}>{m}</option>)}
+                </select>
               </div>
             )}
             {sortedHistory.length===0 && <div className="empty">この月の記録はありません</div>}
@@ -603,11 +565,21 @@ export default function App() {
                           ))}
                         </div>
                       )}
-                      <div className="addrow" style={{justifyContent:'center',gap:0,padding:'8px 12px 12px',background:'#fafafa'}}>
-                        <Picker values={WEIGHTS} value={inp.weight||1} onChange={v=>setEditSetInputs(p=>({...p,[ex.id]:{...inp,weight:v}}))} unit="kg"/>
-                        <div style={{display:'flex',alignItems:'center',color:'#ddd',fontSize:28,fontFamily:'Bebas Neue,sans-serif',padding:'0 4px'}}>×</div>
-                        <Picker values={REPS} value={inp.reps||1} onChange={v=>setEditSetInputs(p=>({...p,[ex.id]:{...inp,reps:v}}))} unit="rep"/>
-                        <button className="addbtn" style={{marginLeft:12,flexShrink:0}} onClick={()=>addEditSet(ex.id)}>＋</button>
+                      <div className="addrow" style={{justifyContent:'center',gap:8,padding:'12px 16px',background:'#fafafa'}}>
+                        <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:4}}>
+                          <select className="nsel" value={inp.weight||1} onChange={e=>setEditSetInputs(p=>({...p,[ex.id]:{...inp,weight:Number(e.target.value)}}))}>
+                            {Array.from({length:150},(_,i)=>i+1).map(w=><option key={w} value={w}>{w}</option>)}
+                          </select>
+                          <span className="ilbl">kg</span>
+                        </div>
+                        <div style={{display:'flex',alignItems:'center',color:'#ddd',fontSize:28,fontFamily:"'Bebas Neue',sans-serif",paddingBottom:18}}>×</div>
+                        <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:4}}>
+                          <select className="nsel" value={inp.reps||1} onChange={e=>setEditSetInputs(p=>({...p,[ex.id]:{...inp,reps:Number(e.target.value)}}))}>
+                            {Array.from({length:20},(_,i)=>i+1).map(r=><option key={r} value={r}>{r}</option>)}
+                          </select>
+                          <span className="ilbl">rep</span>
+                        </div>
+                        <button className="addbtn" style={{marginBottom:18,flexShrink:0}} onClick={()=>addEditSet(ex.id)}>＋</button>
                       </div>
                     </div>
                   );
