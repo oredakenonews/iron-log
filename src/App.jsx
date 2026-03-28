@@ -119,6 +119,8 @@ export default function App() {
   const [showTimer, setShowTimer] = useState(false);
   const [chartExercise, setChartExercise] = useState(null);
   const [chartMetric, setChartMetric] = useState("volume");
+  const [editingDate, setEditingDate] = useState(null);
+  const [editSetInputs, setEditSetInputs] = useState({});
   const timerRef = useRef(null);
   const audioCtxRef = useRef(null);
 
@@ -159,6 +161,39 @@ export default function App() {
     setSessions(next);
     saveData(next);
     setSavedFlash(true); setTimeout(() => setSavedFlash(false), 1200);
+  };
+
+  // 編集モード用関数
+  const editSession = sessions[editingDate] || { date: editingDate, exercises: [] };
+  const updateEditSession = async (updated) => {
+    const next = { ...sessions, [editingDate]: updated };
+    setSessions(next); await saveData(next);
+    setSavedFlash(true); setTimeout(() => setSavedFlash(false), 1200);
+  };
+  const addEditExercise = (name) => {
+    const ex = { id: Date.now(), name, sets: [] };
+    updateEditSession({ ...editSession, exercises: [...editSession.exercises, ex] });
+  };
+  const removeEditExercise = (exId) =>
+    updateEditSession({ ...editSession, exercises: editSession.exercises.filter(e => e.id !== exId) });
+  const addEditSet = (exId) => {
+    const inp = editSetInputs[exId] || {};
+    if (!inp.weight || !inp.reps) return;
+    const newSet = { id: Date.now(), weight: parseFloat(inp.weight), reps: parseInt(inp.reps) };
+    const exes = editSession.exercises.map(e => e.id === exId ? { ...e, sets: [...e.sets, newSet] } : e);
+    updateEditSession({ ...editSession, exercises: exes });
+    setEditSetInputs(prev => ({ ...prev, [exId]: { weight: "", reps: "" } }));
+  };
+  const removeEditSet = (exId, setId) => {
+    const exes = editSession.exercises.map(e =>
+      e.id === exId ? { ...e, sets: e.sets.filter(s => s.id !== setId) } : e);
+    updateEditSession({ ...editSession, exercises: exes });
+  };
+  const deleteEditSession = async () => {
+    const next = { ...sessions };
+    delete next[editingDate];
+    setSessions(next); await saveData(next);
+    setEditingDate(null);
   };
 
   const addExercise = (name) => {
@@ -385,7 +420,10 @@ export default function App() {
               <div className="hcard" key={session.date}>
                 <div className="hhdr">
                   <span className="hdate">{formatDate(session.date)}</span>
-                  <span className="hvol">Vol. {totalVolume(session.exercises).toLocaleString()}kg</span>
+                  <div style={{display:'flex',alignItems:'center',gap:8}}>
+                    <span className="hvol">Vol. {totalVolume(session.exercises).toLocaleString()}kg</span>
+                    <button onClick={()=>{setEditingDate(session.date);setEditSetInputs({});}} style={{background:'none',border:'2px solid #e5e5e5',borderRadius:10,color:'#aaa',fontSize:13,fontWeight:800,padding:'5px 12px',cursor:'pointer',fontFamily:'Noto Sans JP,sans-serif'}}>編集</button>
+                  </div>
                 </div>
                 {session.exercises.map(ex=>(
                   <div className="hex" key={ex.id}>
@@ -434,6 +472,73 @@ export default function App() {
             {!aiText&&!aiLoading&&<div className="empty">記録を追加してから<br/>AIアドバイスを取得しよう 🤖</div>}
           </>)}
         </div>
+
+        {editingDate && (
+          <div className="pov" onClick={()=>setEditingDate(null)}>
+            <div className="psh" style={{maxHeight:'90vh'}} onClick={e=>e.stopPropagation()}>
+              <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'0 20px 16px',borderBottom:'2px solid #f5f5f5'}}>
+                <div className="ptitle" style={{padding:0,border:'none'}}>{formatDate(editingDate)}</div>
+                <button onClick={deleteEditSession} style={{background:'none',border:'none',color:'#ffaaaa',fontSize:14,fontWeight:800,cursor:'pointer',fontFamily:'Noto Sans JP,sans-serif'}}>🗑 削除</button>
+              </div>
+              <div style={{padding:'16px 16px 0',overflowY:'auto',maxHeight:'70vh'}}>
+                {editSession.exercises.map(ex => {
+                  const inp = editSetInputs[ex.id] || {weight:"",reps:""};
+                  return (
+                    <div className="excard" key={ex.id} style={{marginBottom:12}}>
+                      <div className="exhdr">
+                        <div>
+                          <div className="exname">{ex.name}</div>
+                          <div className="exmeta">{ex.sets.length} セット完了</div>
+                        </div>
+                        <button className="exdel" onClick={()=>removeEditExercise(ex.id)}>✕</button>
+                      </div>
+                      {ex.sets.length>0 && (
+                        <div className="stbl">
+                          {ex.sets.map((s,i)=>(
+                            <div className="srow" key={s.id}>
+                              <span className="snum">S{i+1}</span>
+                              <span className="swt">{s.weight}</span>
+                              <span className="su">kg</span>
+                              <span className="sx">×</span>
+                              <span className="srep">{s.reps}</span>
+                              <span className="su">rep</span>
+                              <span className="svol">{(s.weight*s.reps).toLocaleString()}kg</span>
+                              <button className="sdel" onClick={()=>removeEditSet(ex.id,s.id)}>✕</button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      <div className="addrow">
+                        <div>
+                          <input className="wi" type="number" placeholder="重量" value={inp.weight}
+                            onChange={e=>setEditSetInputs(p=>({...p,[ex.id]:{...inp,weight:e.target.value}}))}
+                            onKeyDown={e=>e.key==="Enter"&&addEditSet(ex.id)}/>
+                          <div className="ilbl">kg</div>
+                        </div>
+                        <div>
+                          <input className="ri" type="number" placeholder="回数" value={inp.reps}
+                            onChange={e=>setEditSetInputs(p=>({...p,[ex.id]:{...inp,reps:e.target.value}}))}
+                            onKeyDown={e=>e.key==="Enter"&&addEditSet(ex.id)}/>
+                          <div className="ilbl">rep</div>
+                        </div>
+                        <button className="addbtn" onClick={()=>addEditSet(ex.id)}>＋</button>
+                      </div>
+                    </div>
+                  );
+                })}
+                <button className="addex" style={{marginBottom:16}} onClick={()=>{
+                  const name = EXERCISES.find(n => !editSession.exercises.map(e=>e.name).includes(n));
+                  if(name) addEditExercise(name);
+                }}>
+                  <span style={{fontSize:24}}>＋</span> 種目を追加（リストから順番に）
+                </button>
+              </div>
+              <div style={{padding:'12px 20px 20px',borderTop:'2px solid #f5f5f5'}}>
+                <button onClick={()=>setEditingDate(null)} style={{width:'100%',padding:'16px',background:'linear-gradient(135deg,#e84c1e,#e8003d)',border:'none',borderRadius:14,color:'#fff',fontSize:18,fontWeight:800,cursor:'pointer',fontFamily:'Noto Sans JP,sans-serif'}}>完了</button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {pickingExercise && (
           <div className="pov" onClick={()=>setPickingExercise(false)}>
