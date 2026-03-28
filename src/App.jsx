@@ -108,6 +108,7 @@ export default function App() {
   const [aiLoading, setAiLoading] = useState(false);
   const [savedFlash, setSavedFlash] = useState(false);
   const [setInputs, setSetInputs] = useState({});
+  const [timerEnabled, setTimerEnabled] = useState(() => localStorage.getItem('timer-enabled') !== 'false');
   const [timerSec, setTimerSec] = useState(null);
   const [showTimer, setShowTimer] = useState(false);
   const [chartExercise, setChartExercise] = useState(null);
@@ -130,12 +131,18 @@ export default function App() {
   }, [timerSec]);
 
   const startTimer = () => {
+    if (!timerEnabled) return;
     clearTimeout(timerRef.current);
     try {
       if (!audioCtxRef.current) audioCtxRef.current = new (window.AudioContext || window.webkitAudioContext)();
       if (audioCtxRef.current.state === "suspended") audioCtxRef.current.resume();
     } catch {}
     setTimerSec(INTERVAL_SEC); setShowTimer(true);
+  };
+  const toggleTimer = (val) => {
+    setTimerEnabled(val);
+    localStorage.setItem('timer-enabled', val);
+    if (!val) stopTimer();
   };
   const stopTimer = () => { clearTimeout(timerRef.current); setTimerSec(null); setShowTimer(false); };
 
@@ -394,6 +401,18 @@ export default function App() {
             ))}
           </>)}
 
+          {tab==="record" && (
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',background:'#fff',borderRadius:16,padding:'14px 18px',marginBottom:14,boxShadow:'0 2px 8px rgba(0,0,0,.07)'}}>
+              <div>
+                <div style={{fontSize:15,fontWeight:800,color:'#111'}}>⏱ インターバルタイマー</div>
+                <div style={{fontSize:13,color:'#aaa',fontWeight:600,marginTop:2}}>{timerEnabled ? 'セット後に2分タイマーが起動' : 'タイマーOFF'}</div>
+              </div>
+              <div onClick={()=>toggleTimer(!timerEnabled)} style={{width:52,height:30,borderRadius:15,background:timerEnabled?'#e84c1e':'#ddd',cursor:'pointer',position:'relative',transition:'background .3s',flexShrink:0}}>
+                <div style={{position:'absolute',top:3,left:timerEnabled?24:3,width:24,height:24,borderRadius:'50%',background:'#fff',boxShadow:'0 1px 4px rgba(0,0,0,.2)',transition:'left .3s'}}/>
+              </div>
+            </div>
+          )}
+
           {tab==="ai" && (<>
             <div className="stitle">AI TRAINER</div>
             <div className="aicard">過去のトレーニングをもとに、重量の伸び・セット構成・種目バランスを分析してアドバイスします。</div>
@@ -427,7 +446,7 @@ export default function App() {
           </div>
         )}
 
-        {showTimer && timerSec!==null && (
+        {timerEnabled && showTimer && timerSec!==null && (
           <div className={`tov ${isDone?"done":""}`} onClick={()=>!isDone&&setShowTimer(false)}>
             <div className="ttitle">インターバル休憩</div>
             <div className="tsvg">
@@ -449,7 +468,7 @@ export default function App() {
           </div>
         )}
 
-        {tab==="record" && timerSec!==null && !showTimer && (
+        {timerEnabled && tab==="record" && timerSec!==null && !showTimer && (
           <div className="tmini" onClick={()=>setShowTimer(true)}>
             <div className="tml">
               <span style={{fontSize:28}}>⏱</span>
@@ -462,7 +481,7 @@ export default function App() {
           </div>
         )}
 
-        {tab==="record" && timerSec===null && todaySession.exercises.some(e=>e.sets.length>0) && (
+        {timerEnabled && tab==="record" && timerSec===null && todaySession.exercises.some(e=>e.sets.length>0) && (
           <div className="tsbar">
             <span className="tslbl">インターバルタイマー</span>
             <button className="tsbtn" onClick={startTimer}>⏱ 2分スタート</button>
