@@ -16,10 +16,11 @@ function playBeep(audioCtx) {
 }
 
 const EXERCISES = [
-  "ベンチプレス","スクワット","デッドリフト","ショルダープレス",
-  "サイドレイズ","ラットプルダウン","ベントオーバーロウ","レッグプレス","ダンベルカール",
+  "ベンチプレス","スクワット","サイドレイズ","ラットプルダウン",
+  "マシンベンチプレス","ラテラルレイズ","自重スクワット","プッシュアップ",
+  "デッドリフト","ショルダープレス","レッグプレス","ダンベルカール","ベントオーバーロウ",
   "トライセプスプレス","ケーブルクロス","レッグカール","チェストフライ",
-  "インクラインプレス","ディップス","チンニング","レッグエクステンション"
+  "インクラインプレス","ディップス","チンニング","レッグエクステンション",
 ];
 
 const STORAGE_KEY = "gym-tracker-v2";
@@ -400,7 +401,7 @@ export default function App() {
                     <div style={{display:'flex',alignItems:'center',color:'#ddd',fontSize:28,fontFamily:"'Bebas Neue',sans-serif",paddingBottom:18}}>×</div>
                     <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:4}}>
                       <select className="nsel" value={inp.reps||1} onChange={e=>setSetInputs(p=>({...p,[ex.id]:{...inp,reps:Number(e.target.value)}}))}>
-                        {Array.from({length:20},(_,i)=>i+1).map(r=><option key={r} value={r}>{r}</option>)}
+                        {Array.from({length:10},(_,i)=>(i+1)*5).map(r=><option key={r} value={r}>{r}</option>)}
                       </select>
                       <span className="ilbl">rep</span>
                     </div>
@@ -575,7 +576,7 @@ export default function App() {
                         <div style={{display:'flex',alignItems:'center',color:'#ddd',fontSize:28,fontFamily:"'Bebas Neue',sans-serif",paddingBottom:18}}>×</div>
                         <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:4}}>
                           <select className="nsel" value={inp.reps||1} onChange={e=>setEditSetInputs(p=>({...p,[ex.id]:{...inp,reps:Number(e.target.value)}}))}>
-                            {Array.from({length:20},(_,i)=>i+1).map(r=><option key={r} value={r}>{r}</option>)}
+                            {Array.from({length:10},(_,i)=>(i+1)*5).map(r=><option key={r} value={r}>{r}</option>)}
                           </select>
                           <span className="ilbl">rep</span>
                         </div>
