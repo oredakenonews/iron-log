@@ -112,6 +112,7 @@ export default function App() {
     loadData().then(d => { setSessions(d); setLoaded(true); });
   }, []);
   const [pickingExercise, setPickingExercise] = useState(false);
+  const [pickingEditExercise, setPickingEditExercise] = useState(false);
   const [aiText, setAiText] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
   const [savedFlash, setSavedFlash] = useState(false);
@@ -366,6 +367,7 @@ export default function App() {
             )}
             {todaySession.exercises.map(ex => {
               const inp = setInputs[ex.id] || {weight:"",reps:""};
+              const isBodyweight = ["自重スクワット","プッシュアップ"].includes(ex.name);
               return (
                 <div className="excard" key={ex.id}>
                   <div className="exhdr">
@@ -393,15 +395,15 @@ export default function App() {
                   )}
                   <div className="addrow" style={{justifyContent:'center',gap:8,padding:'12px 16px',background:'#fafafa'}}>
                     <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:4}}>
-                      <select className="nsel" value={inp.weight||1} onChange={e=>setSetInputs(p=>({...p,[ex.id]:{...inp,weight:Number(e.target.value)}}))}>
-                        {Array.from({length:150},(_,i)=>i+1).map(w=><option key={w} value={w}>{w}</option>)}
+                      <select className="nsel" value={inp.weight!==""?inp.weight:(isBodyweight?0:1)} onChange={e=>setSetInputs(p=>({...p,[ex.id]:{...inp,weight:Number(e.target.value)}}))}>
+                        {Array.from({length:isBodyweight?151:150},(_,i)=>isBodyweight?i:i+1).map(w=><option key={w} value={w}>{w}</option>)}
                       </select>
                       <span className="ilbl">kg</span>
                     </div>
                     <div style={{display:'flex',alignItems:'center',color:'#ddd',fontSize:28,fontFamily:"'Bebas Neue',sans-serif",paddingBottom:18}}>×</div>
                     <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:4}}>
-                      <select className="nsel" value={inp.reps||1} onChange={e=>setSetInputs(p=>({...p,[ex.id]:{...inp,reps:Number(e.target.value)}}))}>
-                        {Array.from({length:10},(_,i)=>(i+1)*5).map(r=><option key={r} value={r}>{r}</option>)}
+                      <select className="nsel" value={inp.reps!==""?inp.reps:(isBodyweight?5:1)} onChange={e=>setSetInputs(p=>({...p,[ex.id]:{...inp,reps:Number(e.target.value)}}))}>
+                        {isBodyweight?Array.from({length:10},(_,i)=>(i+1)*5).map(r=><option key={r} value={r}>{r}</option>):Array.from({length:20},(_,i)=>i+1).map(r=><option key={r} value={r}>{r}</option>)}
                       </select>
                       <span className="ilbl">rep</span>
                     </div>
@@ -541,6 +543,7 @@ export default function App() {
               <div style={{padding:'16px 16px 0',overflowY:'auto',maxHeight:'70vh'}}>
                 {editSession.exercises.map(ex => {
                   const inp = editSetInputs[ex.id] || {weight:"",reps:""};
+                  const isBodyweight = ["自重スクワット","プッシュアップ"].includes(ex.name);
                   return (
                     <div className="excard" key={ex.id} style={{marginBottom:12}}>
                       <div className="exhdr">
@@ -568,15 +571,15 @@ export default function App() {
                       )}
                       <div className="addrow" style={{justifyContent:'center',gap:8,padding:'12px 16px',background:'#fafafa'}}>
                         <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:4}}>
-                          <select className="nsel" value={inp.weight||1} onChange={e=>setEditSetInputs(p=>({...p,[ex.id]:{...inp,weight:Number(e.target.value)}}))}>
-                            {Array.from({length:150},(_,i)=>i+1).map(w=><option key={w} value={w}>{w}</option>)}
+                          <select className="nsel" value={inp.weight!==""?inp.weight:(isBodyweight?0:1)} onChange={e=>setEditSetInputs(p=>({...p,[ex.id]:{...inp,weight:Number(e.target.value)}}))}>
+                            {Array.from({length:isBodyweight?151:150},(_,i)=>isBodyweight?i:i+1).map(w=><option key={w} value={w}>{w}</option>)}
                           </select>
                           <span className="ilbl">kg</span>
                         </div>
                         <div style={{display:'flex',alignItems:'center',color:'#ddd',fontSize:28,fontFamily:"'Bebas Neue',sans-serif",paddingBottom:18}}>×</div>
                         <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:4}}>
-                          <select className="nsel" value={inp.reps||1} onChange={e=>setEditSetInputs(p=>({...p,[ex.id]:{...inp,reps:Number(e.target.value)}}))}>
-                            {Array.from({length:10},(_,i)=>(i+1)*5).map(r=><option key={r} value={r}>{r}</option>)}
+                          <select className="nsel" value={inp.reps!==""?inp.reps:(isBodyweight?5:1)} onChange={e=>setEditSetInputs(p=>({...p,[ex.id]:{...inp,reps:Number(e.target.value)}}))}>
+                            {isBodyweight?Array.from({length:10},(_,i)=>(i+1)*5).map(r=><option key={r} value={r}>{r}</option>):Array.from({length:20},(_,i)=>i+1).map(r=><option key={r} value={r}>{r}</option>)}
                           </select>
                           <span className="ilbl">rep</span>
                         </div>
@@ -585,11 +588,8 @@ export default function App() {
                     </div>
                   );
                 })}
-                <button className="addex" style={{marginBottom:16}} onClick={()=>{
-                  const name = EXERCISES.find(n => !editSession.exercises.map(e=>e.name).includes(n));
-                  if(name) addEditExercise(name);
-                }}>
-                  <span style={{fontSize:24}}>＋</span> 種目を追加（リストから順番に）
+                <button className="addex" style={{marginBottom:16}} onClick={()=>setPickingEditExercise(true)}>
+                  <span style={{fontSize:24}}>＋</span> 種目を追加
                 </button>
               </div>
               <div style={{padding:'12px 20px 20px',borderTop:'2px solid #f5f5f5'}}>
@@ -607,6 +607,23 @@ export default function App() {
                 const used=usedExercises.includes(ex);
                 return (
                   <div key={ex} className={`pitem ${used?"used":""}`} onClick={()=>!used&&addExercise(ex)}>
+                    {ex}
+                    {used&&<span style={{fontSize:14,color:"#ddd",fontWeight:700}}>追加済み</span>}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {pickingEditExercise && (
+          <div className="pov" onClick={()=>setPickingEditExercise(false)}>
+            <div className="psh" onClick={e=>e.stopPropagation()}>
+              <div className="ptitle">種目を選択</div>
+              {EXERCISES.map(ex=>{
+                const used=editSession.exercises.map(e=>e.name).includes(ex);
+                return (
+                  <div key={ex} className={`pitem ${used?"used":""}`} onClick={()=>{if(!used){addEditExercise(ex);setPickingEditExercise(false);}}}>
                     {ex}
                     {used&&<span style={{fontSize:14,color:"#ddd",fontWeight:700}}>追加済み</span>}
                   </div>
