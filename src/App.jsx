@@ -782,7 +782,7 @@ export default function App() {
             <div className="csec">
               <div className="cstitle">身長</div>
               <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:16}}>
-                <input type="number" value={profile.height_cm} onChange={e=>setProfile(p=>({...p,height_cm:e.target.value}))} style={{flex:1,padding:'10px 12px',borderRadius:12,border:'2.5px solid #e5e5e5',fontSize:18,fontWeight:700,outline:'none'}} placeholder="172"/>
+                <input type="number" value={profile.height_cm} onChange={e=>setProfile(p=>({...p,height_cm:e.target.value}))} style={{width:90,padding:'10px 12px',borderRadius:12,border:'2.5px solid #e5e5e5',fontSize:18,fontWeight:700,outline:'none'}} placeholder="172"/>
                 <span style={{fontSize:14,color:'#aaa',fontWeight:700}}>cm</span>
               </div>
               <button onClick={handleSaveProfile} style={{width:'100%',padding:'14px',background:'linear-gradient(135deg,#e84c1e,#e8003d)',border:'none',borderRadius:12,color:'#fff',fontFamily:"'Bebas Neue',sans-serif",fontSize:20,letterSpacing:2,cursor:'pointer'}}>
