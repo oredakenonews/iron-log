@@ -153,6 +153,11 @@ export default function App() {
   const [authPassword, setAuthPassword] = useState('');
   const [authError, setAuthError] = useState('');
   const [authSubmitting, setAuthSubmitting] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
+  const [isPasswordRecovery, setIsPasswordRecovery] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [newPasswordSubmitting, setNewPasswordSubmitting] = useState(false);
+  const [newPasswordError, setNewPasswordError] = useState('');
 
   const [tab, setTab] = useState("record");
   const [sessions, setSessions] = useState({});
@@ -164,7 +169,12 @@ export default function App() {
       setAuthLoading(false);
     });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
+      if (_event === 'PASSWORD_RECOVERY') {
+        setIsPasswordRecovery(true);
+        setUser(session?.user ?? null);
+      } else {
+        setUser(session?.user ?? null);
+      }
     });
     return () => subscription.unsubscribe();
   }, []);
@@ -339,12 +349,31 @@ export default function App() {
   const handleAuth = async (e) => {
     e.preventDefault();
     setAuthSubmitting(true); setAuthError('');
+    if (authMode === 'reset') {
+      const { error } = await supabase.auth.resetPasswordForEmail(authEmail, {
+        redirectTo: window.location.origin,
+      });
+      if (error) { setAuthError(error.message); }
+      else { setResetSent(true); }
+      setAuthSubmitting(false);
+      return;
+    }
     const { error } = authMode === 'login'
       ? await supabase.auth.signInWithPassword({ email: authEmail, password: authPassword })
       : await supabase.auth.signUp({ email: authEmail, password: authPassword });
     if (error) setAuthError(error.message);
     setAuthSubmitting(false);
   };
+
+  const handleSetNewPassword = async (e) => {
+    e.preventDefault();
+    setNewPasswordSubmitting(true); setNewPasswordError('');
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    if (error) { setNewPasswordError(error.message); }
+    else { setIsPasswordRecovery(false); setNewPassword(''); }
+    setNewPasswordSubmitting(false);
+  };
+
   const handleLogout = async () => { await supabase.auth.signOut(); };
 
   const todaySession = sessions[TODAY] || { date: TODAY, exercises: [] };
@@ -548,24 +577,63 @@ export default function App() {
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Noto+Sans+JP:wght@400;600;800&display=swap'); *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;} body{background:#f2f2f7;color-scheme:light;} .app{min-height:100vh;background:#f2f2f7;color:#111;font-family:'Noto Sans JP',sans-serif;max-width:430px;margin:0 auto;} .header{padding:22px 20px 0;display:flex;align-items:center;justify-content:space-between;} .logo{font-family:'Bebas Neue',sans-serif;font-size:38px;letter-spacing:3px;background:linear-gradient(135deg,#e84c1e,#e8003d);-webkit-background-clip:text;-webkit-text-fill-color:transparent;} .saved{font-size:16px;color:#16a34a;font-weight:800;opacity:0;transition:opacity 0.3s;} .saved.on{opacity:1;} .tabs{display:flex;margin:14px 16px 0;gap:4px;background:#ddd;padding:5px;border-radius:16px;} .tb{flex:1;padding:13px 0;border:none;border-radius:12px;background:transparent;color:#666;font-size:15px;font-family:'Noto Sans JP',sans-serif;cursor:pointer;font-weight:700;} .tb.on{background:linear-gradient(135deg,#e84c1e,#e8003d);color:#fff;box-shadow:0 2px 10px rgba(232,76,30,.35);} .content{padding:16px 16px 130px;} .dh{font-size:17px;color:#666;margin-bottom:14px;font-weight:700;} .vbar{display:flex;justify-content:space-between;align-items:center;background:#fff;border-radius:18px;padding:16px 20px;margin-bottom:14px;box-shadow:0 2px 8px rgba(0,0,0,.08);} .vlbl{font-size:14px;color:#999;margin-bottom:2px;font-weight:700;} .vsets{font-size:16px;color:#555;font-weight:700;} .vval{font-family:'Bebas Neue',sans-serif;font-size:38px;color:#111;} .excard{background:#fff;border-radius:20px;margin-bottom:16px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.09);animation:si .2s ease;} @keyframes si{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}} .exhdr{display:flex;align-items:center;justify-content:space-between;padding:16px 16px 12px;} .exname{font-weight:800;font-size:20px;color:#111;} .exmeta{font-size:14px;color:#999;margin-top:3px;font-weight:600;} .exdel{background:none;border:none;color:#ccc;cursor:pointer;font-size:22px;padding:6px;} .stbl{padding:0 16px;} .srow{display:flex;align-items:center;gap:8px;padding:12px 0;border-top:2px solid #f5f5f5;} .snum{font-family:'Bebas Neue',sans-serif;font-size:16px;color:#ccc;width:30px;flex-shrink:0;} .swt{font-family:'Bebas Neue',sans-serif;font-size:34px;color:#e84c1e;line-height:1;} .su{font-size:15px;color:#aaa;font-weight:700;} .sx{font-size:18px;color:#ddd;margin:0 4px;} .srep{font-family:'Bebas Neue',sans-serif;font-size:34px;color:#111;line-height:1;} .svol{font-size:13px;color:#ccc;margin-left:auto;font-weight:700;} .sdel{background:none;border:none;color:#ddd;cursor:pointer;font-size:18px;padding:4px 6px;} .addrow{display:flex;align-items:center;gap:8px;padding:12px 16px 14px;border-top:2px solid #f5f5f5;background:#fafafa;} input{background:#fff;border:2.5px solid #e5e5e5;border-radius:12px;color:#111;font-family:'Noto Sans JP',sans-serif;font-size:22px;font-weight:800;padding:11px 8px;outline:none;text-align:center;transition:border-color .2s;} input:focus{border-color:#e84c1e;} .wi{width:84px;} .ri{width:72px;} .ilbl{font-size:14px;color:#bbb;text-align:center;margin-top:4px;font-weight:700;} .addbtn{background:linear-gradient(135deg,#e84c1e,#e8003d);border:none;border-radius:12px;color:#fff;font-size:28px;width:52px;height:52px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 2px 10px rgba(232,76,30,.35);transition:transform .1s;} .addbtn:active{transform:scale(.9);} .addex{width:100%;padding:20px;background:#fff;border:2.5px dashed #ddd;border-radius:18px;color:#bbb;font-family:'Noto Sans JP',sans-serif;font-size:18px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:0 1px 4px rgba(0,0,0,.05);} .addex:active{border-color:#e84c1e;color:#e84c1e;} .pov{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;display:flex;align-items:flex-end;} .psh{background:#fff;border-radius:26px 26px 0 0;width:100%;max-height:72vh;overflow-y:auto;padding:20px 0 54px;animation:su .25s ease;} @keyframes su{from{transform:translateY(100%)}to{transform:translateY(0)}} .ptitle{font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:2px;color:#e84c1e;padding:0 20px 16px;border-bottom:2px solid #f5f5f5;} .pitem{padding:20px;font-size:19px;font-weight:700;cursor:pointer;border-bottom:1.5px solid #f8f8f8;display:flex;justify-content:space-between;align-items:center;color:#111;} .pitem:active{background:#fff5f0;} .pitem.used{color:#ddd;pointer-events:none;} .stitle{font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:2px;color:#e84c1e;margin-bottom:14px;} .csec{background:#fff;border-radius:20px;padding:18px;margin-bottom:16px;box-shadow:0 2px 10px rgba(0,0,0,.08);} .cstitle{font-size:15px;color:#999;margin-bottom:12px;font-weight:700;} .exscroll{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none;} .exscroll::-webkit-scrollbar{display:none;} .echip{flex-shrink:0;padding:10px 18px;border-radius:50px;border:2.5px solid #e5e5e5;background:transparent;color:#888;font-size:15px;font-family:'Noto Sans JP',sans-serif;cursor:pointer;white-space:nowrap;font-weight:700;} .echip.on{border-color:#e84c1e;color:#e84c1e;background:#fff5f0;} .mtog{display:flex;gap:8px;margin:14px 0 16px;} .mbtn{flex:1;padding:13px 0;border-radius:12px;border:2.5px solid #e5e5e5;background:transparent;color:#888;font-size:16px;font-family:'Noto Sans JP',sans-serif;cursor:pointer;font-weight:800;} .mbtn.on{border-color:#e84c1e;color:#e84c1e;background:#fff5f0;} .cstats{display:flex;gap:10px;margin-top:14px;} .sbox{flex:1;background:#f8f8f8;border-radius:14px;padding:14px 12px;} .slbl{font-size:14px;color:#aaa;margin-bottom:4px;font-weight:700;} .sval{font-family:'Bebas Neue',sans-serif;font-size:30px;color:#e84c1e;line-height:1;} .sunt{font-size:13px;color:#bbb;font-weight:700;} .hcard{background:#fff;border-radius:20px;padding:18px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,.07);} .hhdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;} .hdate{font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:1px;color:#111;} .hvol{font-size:15px;color:#aaa;font-weight:700;} .hex{margin-bottom:10px;} .hexname{font-size:16px;color:#e84c1e;font-weight:800;margin-bottom:6px;} .hsets{display:flex;gap:6px;flex-wrap:wrap;} .hchip{background:#f5f5f5;border-radius:10px;padding:7px 13px;} .hl{font-size:13px;color:#bbb;font-weight:700;} .hn{font-family:'Bebas Neue',sans-serif;font-size:22px;color:#111;} .aicard{background:#fff;border-radius:18px;padding:18px;margin-bottom:16px;font-size:17px;color:#777;line-height:1.85;font-weight:600;box-shadow:0 2px 8px rgba(0,0,0,.07);} .aibtn{width:100%;padding:18px;background:#fff;border:3px solid #e84c1e;border-radius:18px;color:#e84c1e;font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:2px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:0 2px 8px rgba(0,0,0,.07);} .aibub{margin-top:16px;background:#fff;border:2.5px solid #ede8ff;border-radius:18px;padding:20px;font-size:17px;line-height:1.95;color:#333;font-weight:600;box-shadow:0 2px 8px rgba(0,0,0,.07);} .ailbl{font-size:14px;color:#7c3aed;letter-spacing:2px;margin-bottom:10px;display:flex;align-items:center;gap:6px;font-weight:800;} .pulse{width:8px;height:8px;background:#7c3aed;border-radius:50%;animation:p 1.2s infinite;} @keyframes p{0%,100%{opacity:1}50%{opacity:.3}} .dots span{display:inline-block;width:7px;height:7px;background:#e84c1e;border-radius:50%;animation:b .8s infinite;margin:0 2px;} .dots span:nth-child(2){animation-delay:.15s}.dots span:nth-child(3){animation-delay:.3s} @keyframes b{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}} .empty{text-align:center;color:#ccc;padding:50px 0;font-size:17px;line-height:2.4;font-weight:700;} .tov{position:fixed;inset:0;background:rgba(255,255,255,.97);z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;} .tov.done{background:rgba(240,255,245,.98);} .ttitle{font-size:18px;color:#aaa;letter-spacing:3px;font-weight:800;} .tsvg{position:relative;} .tsvg svg{transform:rotate(-90deg);} .tsvg .rt{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;} .ttime{font-family:'Bebas Neue',sans-serif;font-size:80px;line-height:1;color:#111;letter-spacing:4px;} .tdone{font-family:'Bebas Neue',sans-serif;font-size:44px;color:#16a34a;letter-spacing:6px;animation:pop .4s ease;} @keyframes pop{from{transform:scale(.7);opacity:0}to{transform:scale(1);opacity:1}} .thint{font-size:16px;color:#bbb;font-weight:700;} .tclosebtn{padding:18px 52px;background:#f5f5f5;border:2.5px solid #e0e0e0;border-radius:50px;color:#666;font-family:'Noto Sans JP',sans-serif;font-size:18px;font-weight:800;cursor:pointer;} .tmini{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;background:#fff;border-top:3px solid #e84c1e;padding:16px 20px 36px;display:flex;align-items:center;justify-content:space-between;z-index:50;cursor:pointer;box-shadow:0 -4px 16px rgba(0,0,0,.1);} .tml{display:flex;align-items:center;gap:12px;} .tmlbl{font-size:15px;color:#aaa;font-weight:700;} .tmtime{font-family:'Bebas Neue',sans-serif;font-size:40px;color:#e84c1e;line-height:1;} .tmstop{background:none;border:2.5px solid #e0e0e0;border-radius:10px;color:#888;font-size:16px;font-weight:800;padding:10px 18px;cursor:pointer;font-family:'Noto Sans JP',sans-serif;} .tsbar{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;background:#fff;border-top:2px solid #eee;padding:14px 20px 36px;display:flex;align-items:center;justify-content:space-between;z-index:50;box-shadow:0 -2px 10px rgba(0,0,0,.06);} .tslbl{font-size:16px;color:#bbb;font-weight:700;} .tsbtn{display:flex;align-items:center;gap:8px;background:none;border:2.5px solid #e0e0e0;border-radius:14px;color:#888;font-size:17px;font-weight:800;padding:12px 22px;cursor:pointer;font-family:'Noto Sans JP',sans-serif;} .nsel{appearance:none;-webkit-appearance:none;background:#f5f5f5;border:2.5px solid #e5e5e5;border-radius:12px;font-family:'Bebas Neue',sans-serif;font-size:28px;color:#e84c1e;font-weight:700;text-align:center;padding:10px 8px;width:86px;cursor:pointer;outline:none;} .nsel:focus{border-color:#e84c1e;} .csvbtn{display:flex;align-items:center;gap:8px;background:none;border:2.5px solid #e0e0e0;border-radius:14px;color:#888;font-size:16px;font-weight:800;padding:12px 20px;cursor:pointer;font-family:'Noto Sans JP',sans-serif;white-space:nowrap;} .csvbtn:active{border-color:#e84c1e;color:#e84c1e;} .histhdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;} .histhdr .stitle{margin-bottom:0;} .authpage{min-height:100vh;background:#f2f2f7;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;} .authlogo{font-family:'Bebas Neue',sans-serif;font-size:52px;letter-spacing:4px;background:linear-gradient(135deg,#e84c1e,#e8003d);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:32px;} .authcard{background:#fff;border-radius:24px;padding:28px 24px;width:100%;max-width:380px;box-shadow:0 4px 24px rgba(0,0,0,.1);} .authtitle{font-size:20px;font-weight:800;color:#111;margin-bottom:24px;text-align:center;} .authinput{width:100%;padding:16px;background:#f5f5f5;border:2.5px solid #e5e5e5;border-radius:14px;font-size:16px;font-weight:600;color:#111;font-family:'Noto Sans JP',sans-serif;outline:none;margin-bottom:12px;box-sizing:border-box;} .authinput:focus{border-color:#e84c1e;} .authbtn{width:100%;padding:18px;background:linear-gradient(135deg,#e84c1e,#e8003d);border:none;border-radius:14px;color:#fff;font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;cursor:pointer;margin-top:8px;box-shadow:0 2px 10px rgba(232,76,30,.35);} .authbtn:disabled{opacity:.6;cursor:not-allowed;} .autherr{color:#e8003d;font-size:14px;font-weight:700;margin-top:10px;text-align:center;} .authtoggle{margin-top:20px;text-align:center;font-size:15px;color:#aaa;font-weight:700;} .authtoggle span{color:#e84c1e;cursor:pointer;font-weight:800;} .logoutbtn{background:none;border:2px solid #ddd;border-radius:10px;color:#aaa;font-size:13px;font-weight:800;padding:8px 14px;cursor:pointer;font-family:'Noto Sans JP',sans-serif;}`}</style>
       {authLoading ? (
         <div className="authpage"><div className="dots"><span/><span/><span/></div></div>
+      ) : isPasswordRecovery ? (
+        <div className="authpage">
+          <div className="authlogo">IRON LOG</div>
+          <div className="authcard">
+            <div className="authtitle">新しいパスワードを設定</div>
+            <form onSubmit={handleSetNewPassword}>
+              <input className="authinput" type="password" placeholder="新しいパスワード（6文字以上）" value={newPassword} onChange={e=>setNewPassword(e.target.value)} required minLength={6} autoComplete="new-password"/>
+              {newPasswordError && <div className="autherr">{newPasswordError}</div>}
+              <button className="authbtn" type="submit" disabled={newPasswordSubmitting}>
+                {newPasswordSubmitting ? '...' : 'パスワードを変更'}
+              </button>
+            </form>
+          </div>
+        </div>
       ) : !user ? (
         <div className="authpage">
           <div className="authlogo">IRON LOG</div>
           <div className="authcard">
-            <div className="authtitle">{authMode === 'login' ? 'ログイン' : 'アカウント作成'}</div>
-            <form onSubmit={handleAuth}>
-              <input className="authinput" type="email" placeholder="メールアドレス" value={authEmail} onChange={e=>setAuthEmail(e.target.value)} required autoComplete="email"/>
-              <input className="authinput" type="password" placeholder="パスワード" value={authPassword} onChange={e=>setAuthPassword(e.target.value)} required autoComplete={authMode==='login'?'current-password':'new-password'}/>
-              {authError && <div className="autherr">{authError}</div>}
-              <button className="authbtn" type="submit" disabled={authSubmitting}>
-                {authSubmitting ? '...' : authMode === 'login' ? 'LOGIN' : 'SIGN UP'}
-              </button>
-            </form>
-            <div className="authtoggle">
-              {authMode === 'login'
-                ? <>アカウントをお持ちでない方は<span onClick={()=>{setAuthMode('signup');setAuthError('');}}>新規登録</span></>
-                : <>すでにアカウントをお持ちの方は<span onClick={()=>{setAuthMode('login');setAuthError('');}}>ログイン</span></>}
-            </div>
+            {authMode === 'reset' ? (<>
+              <div className="authtitle">パスワードのリセット</div>
+              {resetSent ? (
+                <div style={{textAlign:'center',padding:'16px 0'}}>
+                  <div style={{fontSize:32,marginBottom:12}}>📧</div>
+                  <div style={{fontSize:15,fontWeight:700,color:'#333',lineHeight:1.8}}>リセット用のメールを送りました。<br/>メール内のリンクをタップしてください。</div>
+                  <div className="authtoggle" style={{marginTop:24}}><span onClick={()=>{setAuthMode('login');setResetSent(false);setAuthError('');}}>ログインに戻る</span></div>
+                </div>
+              ) : (
+                <form onSubmit={handleAuth}>
+                  <input className="authinput" type="email" placeholder="登録したメールアドレス" value={authEmail} onChange={e=>setAuthEmail(e.target.value)} required autoComplete="email"/>
+                  {authError && <div className="autherr">{authError}</div>}
+                  <button className="authbtn" type="submit" disabled={authSubmitting}>
+                    {authSubmitting ? '...' : 'リセットメールを送信'}
+                  </button>
+                  <div className="authtoggle"><span onClick={()=>{setAuthMode('login');setAuthError('');}}>ログインに戻る</span></div>
+                </form>
+              )}
+            </>) : (<>
+              <div className="authtitle">{authMode === 'login' ? 'ログイン' : 'アカウント作成'}</div>
+              <form onSubmit={handleAuth}>
+                <input className="authinput" type="email" placeholder="メールアドレス" value={authEmail} onChange={e=>setAuthEmail(e.target.value)} required autoComplete="email"/>
+                <input className="authinput" type="password" placeholder="パスワード" value={authPassword} onChange={e=>setAuthPassword(e.target.value)} required autoComplete={authMode==='login'?'current-password':'new-password'}/>
+                {authError && <div className="autherr">{authError}</div>}
+                <button className="authbtn" type="submit" disabled={authSubmitting}>
+                  {authSubmitting ? '...' : authMode === 'login' ? 'LOGIN' : 'SIGN UP'}
+                </button>
+              </form>
+              <div className="authtoggle">
+                {authMode === 'login'
+                  ? <>アカウントをお持ちでない方は<span onClick={()=>{setAuthMode('signup');setAuthError('');}}>新規登録</span></>
+                  : <>すでにアカウントをお持ちの方は<span onClick={()=>{setAuthMode('login');setAuthError('');}}>ログイン</span></>}
+              </div>
+              {authMode === 'login' && (
+                <div style={{textAlign:'center',marginTop:12,fontSize:14,color:'#bbb',fontWeight:700}}>
+                  <span style={{cursor:'pointer',color:'#aaa'}} onClick={()=>{setAuthMode('reset');setAuthError('');setResetSent(false);}}>パスワードをお忘れの方</span>
+                </div>
+              )}
+            </>)}
           </div>
         </div>
       ) : (
