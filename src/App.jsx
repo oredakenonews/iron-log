@@ -249,9 +249,6 @@ export default function App() {
 
   const [migrating, setMigrating] = useState(false);
   const [migrateError, setMigrateError] = useState('');
-  const [sheetsImporting, setSheetsImporting] = useState(false);
-  const [sheetsImportResult, setSheetsImportResult] = useState('');
-
   const migrateFromLocal = async () => {
     setMigrating(true); setMigrateError('');
     try {
@@ -337,33 +334,6 @@ export default function App() {
     const { data } = await supabase.from('user_exercises').insert(newRow).select().single();
     if (data) setUserExercises(prev => [...prev, data]);
     setNewExName('');
-  };
-
-  const handleSheetsImport = async () => {
-    setSheetsImporting(true); setSheetsImportResult('');
-    try {
-      const res = await fetch('/api/sheets');
-      if (!res.ok) throw new Error(`Sheets API エラー: ${res.status}`);
-      const sheetsSessions = await res.json();
-      const rows = Object.values(sheetsSessions).map(s => ({
-        user_id: user.id,
-        date: s.date,
-        exercises: s.exercises,
-      }));
-      console.log('[sheets import] rows:', rows.length);
-      if (rows.length === 0) { setSheetsImportResult('Sheetsにデータがありませんでした'); setSheetsImporting(false); return; }
-      const { error } = await supabase
-        .from('workout_sessions')
-        .upsert(rows, { onConflict: 'user_id,date' });
-      if (error) throw new Error(error.message);
-      const d = await loadData(user.id);
-      setSessions(d);
-      setSheetsImportResult(`✓ ${rows.length}件のセッションをインポートしました`);
-    } catch (e) {
-      console.error('[sheets import] error:', e);
-      setSheetsImportResult(`エラー: ${e.message}`);
-    }
-    setSheetsImporting(false);
   };
 
   const handleAuth = async (e) => {
@@ -885,21 +855,7 @@ export default function App() {
               </div>
             </div>
 
-            <div className="stitle">データ移行</div>
-            <div className="csec">
-              <div style={{fontSize:14,color:'#999',fontWeight:600,marginBottom:14,lineHeight:1.7}}>
-                旧 Google Sheets のデータを Supabase にインポートします。<br/>
-                インポート完了後はこのボタンを削除してください。
-              </div>
-              <button onClick={handleSheetsImport} disabled={sheetsImporting} style={{width:'100%',padding:'16px',background:'#f5f5f5',border:'2.5px solid #ddd',borderRadius:14,color:'#666',fontFamily:"'Noto Sans JP',sans-serif",fontSize:16,fontWeight:800,cursor:'pointer',opacity:sheetsImporting?0.6:1}}>
-                {sheetsImporting ? '取り込み中...' : '📊 Google Sheets からインポート'}
-              </button>
-              {sheetsImportResult && (
-                <div style={{marginTop:10,fontSize:14,fontWeight:700,color:sheetsImportResult.startsWith('✓')?'#16a34a':'#b91c1c',textAlign:'center'}}>
-                  {sheetsImportResult}
-                </div>
-              )}
-            </div>
+
           </>)}
         </div>
 
